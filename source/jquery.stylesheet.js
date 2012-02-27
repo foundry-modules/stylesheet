@@ -100,7 +100,7 @@ $.stylesheet = (function() {
 
 			if ($.browser.msie && !options.forceInject) {
 
-				return self.import(options);
+				return self._import(options);
 
 			} else {
 
