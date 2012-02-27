@@ -129,9 +129,13 @@ $.stylesheet = (function() {
 				try {
 
 					group = document.createStyleSheet();
-					group.type = "text/css";
+
+					// It is only a getter on IE.
+					// group.type = "text/css";
+
 					group.media = "all";
-					group.class = "jquery_stylesheet";
+					group.title = "jquery_stylesheet";
+
 
 				} catch(e) {
 
