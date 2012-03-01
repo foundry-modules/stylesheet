@@ -1,27 +1,22 @@
-SRC_DIR = source
-BUILD_DIR = build
-FOUNDRY_DIR = ../..
-PRODUCTION_DIR = ${FOUNDRY_DIR}/scripts
-DEVELOPMENT_DIR = ${FOUNDRY_DIR}/scripts_
-UGLIFY = uglifyjs --unsafe -nc
+include ../../build/modules.mk
 
-BASE_FILES = ${SRC_DIR}/jquery.stylesheet.js
+MODULE = stylesheet
+FILENAME = ${MODULE}.js
+RAWFILE = ${DEVELOPMENT_DIR}/${MODULE}.raw.js
 
-all: premake body min foundry
+SOURCE = ${SOURCE_DIR}/jquery.${MODULE}.js
 
-premake:
-	mkdir -p ${BUILD_DIR}
+PRODUCTION = ${PRODUCTION_DIR}/${FILENAME}
+DEVELOPMENT = ${DEVELOPMENT_DIR}/${FILENAME}
 
-body:
-	@@cat ${BASE_FILES} > ${BUILD_DIR}/jquery.stylesheet.js
+all: raw module clean
 
-min:
-	${UGLIFY} ${BUILD_DIR}/jquery.stylesheet.js > ${BUILD_DIR}/jquery.stylesheet.min.js
+module:
+	${WRAP} ${RAWFILE} > ${DEVELOPMENT}
+	${UGLIFYJS} ${DEVELOPMENT} > ${PRODUCTION}
 
-foundry:
-	cat ${FOUNDRY_DIR}/build/foundry_intro.js \
-		${BUILD_DIR}/jquery.stylesheet.js \
-		${FOUNDRY_DIR}/build/foundry_outro.js \
-		> ${DEVELOPMENT_DIR}/stylesheet.js
+raw:
+	cat ${SOURCE} > ${RAWFILE}
 
-	${UGLIFY} ${DEVELOPMENT_DIR}/stylesheet.js > ${PRODUCTION_DIR}/stylesheet.js
+clean:
+	rm -fr ${RAWFILE}
