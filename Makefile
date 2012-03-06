@@ -12,7 +12,7 @@ DEVELOPMENT = ${DEVELOPMENT_DIR}/${FILENAME}
 all: raw module clean
 
 module:
-	${WRAP} ${RAWFILE} > ${DEVELOPMENT}
+	${WRAP} -c ${RAWFILE} > ${DEVELOPMENT}
 	${UGLIFYJS} ${DEVELOPMENT} > ${PRODUCTION}
 
 raw:
