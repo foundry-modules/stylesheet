@@ -100,15 +100,22 @@ $.stylesheet = (function() {
 				// Unable to create further stylesheets
 				if (length>=IE_MAX_STYLESHEET) return;
 				stylesheet = document.createStyleSheet();
+
+				// Fill in attributes
+				(stylesheet.ownerNode || stylesheet.owningElement).type = options.type;
+				stylesheet.title = options.title;
+				stylesheet.media = options.media;
+
 			} else {
-				head.appendChild(document.createElement('style'));
+
+				var style = document.createElement('style');
+					style.type  = options.type;
+					style.title = options.title;
+					style.media = options.media;
+					head.appendChild(style);
+
 				stylesheet = stylesheets[stylesheets.length - 1];
 			}
-
-			// Fill in attributes
-			stylesheet.title = options.title;
-			stylesheet.media = options.media;
-			(stylesheet.ownerNode || stylesheet.owningElement).type = options.type;
 
 			return stylesheet;
 		},
@@ -343,7 +350,7 @@ $.extend(cssRule.prototype, {
 
 			i++;
 
-		} while(rule);
+		} while (rule);
 
 		return this;
 	},
