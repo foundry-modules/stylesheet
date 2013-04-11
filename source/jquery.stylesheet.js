@@ -278,6 +278,8 @@ $.extend(cssRule.prototype, {
 		// Normalize selectors into array
 		if ($.isString(selectors)) {
 			this.selectors = selectors.split(",");
+		} else {
+			this.selectors = selectors;
 		}
 
 		// Normalize rules
