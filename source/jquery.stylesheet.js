@@ -232,7 +232,12 @@ $.stylesheet = (function() {
 var cssRule = function(selector, rules, stylesheet) {
 	this.id = $.uid();
 	this.stylesheet = stylesheet;
-	this.set(selector, rules);
+
+	// If selector is given, automatically add rule.
+	// Else assume caller wants a blank rule object.
+	if (selector) {
+		this.set(selector, rules);
+	}
 }
 
 $.extend(cssRule.prototype, {
@@ -271,7 +276,7 @@ $.extend(cssRule.prototype, {
 
 	ruleText: function() {
 		return this.preRule + "\n" +
-		       ((this.legacy) ? "-rule-id:" + this.id ";" : "") +
+		       ((this.legacy) ? "-rule-id:" + this.id + ";" : "") +
 			   $.map(this.props, function(val, prop) { return prop + ":" + val; }).join(";");
 	},
 
@@ -300,7 +305,7 @@ $.extend(cssRule.prototype, {
 		var stylesheet = this.stylesheet,
 			selectors = this.selectors,
 			ruleText = this.ruleText,
-			i=0,
+			i;
 
 		for (;i<selectors.length;i++) {
 			stylesheet.addRule(selectors[i], ruleText);
