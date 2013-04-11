@@ -226,3 +226,149 @@ $.stylesheet = (function() {
 	return self;
 
 })();
+
+(function(){
+
+var cssRule = function(selector, rules, stylesheet) {
+	this.id = $.uid();
+	this.stylesheet = stylesheet;
+	this.set(selector, rules);
+}
+
+$.extend(cssRule.prototype, {
+
+	stylesheet: null,
+
+	selectors: [],
+
+	preRule: "",
+
+	rules: {},
+
+	legacy: $.IE===8,
+
+	set: function(selectors, rules) {
+
+		// Normalize selectors into array
+		if ($.isString(selectors)) {
+			this.selectors = selectors.split(",");
+		}
+
+		// Normalize rules
+		if ($.isString(rules)) {
+			this.preRule = rules;
+			rules = {};
+		} else {
+			this.preRule = "";
+		}
+
+		return this;
+	},
+
+	cssText: function() {
+		return this.selectors.join(",") + "{" + this.ruleText + "}\n";
+	},
+
+	ruleText: function() {
+		return this.preRule + "\n" +
+		       ((this.legacy) ? "-rule-id:" + this.id ";" : "") +
+			   $.map(this.props, function(val, prop) { return prop + ":" + val; }).join(";");
+	},
+
+	update: function() {
+
+		if (this.legacy) return this.updateLegacy();
+
+		// Generate css text
+		var cssText = this.cssText();
+
+		// If new, insert textnode
+		if (this.textNode===undefined) {
+			this.textNode = document.createTextNode(cssText);
+			stylesheet.appendChild(this.textNode);
+
+		// Or update existing textnode.
+		} else {
+			this.textNode.nodeValue = cssText;
+		}
+
+		return this;
+	},
+
+	updateLegacy: function() {
+
+		var stylesheet = this.stylesheet,
+			selectors = this.selectors,
+			ruleText = this.ruleText,
+			i=0,
+
+		for (;i<selectors.length;i++) {
+			stylesheet.addRule(selectors[i], ruleText);
+		}
+
+		return this;
+	},
+
+	remove: function() {
+
+		if (this.legacy) return this.removeLegacy();
+
+		// Removing text node is so much quicker
+		// than searching for the rule
+		this.stylesheet.ownerNode
+			.removeChild(this.textNode);
+
+		delete this.textNode;
+
+		return this;
+	},
+
+	removeLegacy: function() {
+
+		var stylesheet = this.stylesheet,
+			rule = false,
+			i = 0;
+
+		do {
+			rule = stylesheet.rules[i];
+
+			if (rule.cssText.match(this.id)) {
+				stylesheet.removeRule(i);
+			}
+
+			i++;
+
+		} while(rule);
+
+		return this;
+	},
+
+	css: function(prop, val) {
+
+		// Getter
+		if (val===undefined) {
+			return this.rules[prop];
+		}
+
+		// Setter
+		this.rules[prop] = val;
+		this.update();
+
+		return this;
+	}
+});
+
+var self = $.cssRule = function(selector, rules, stylesheet) {
+
+	// Get next available stylesheet if not stylesheet is provided.
+	if (!stylesheet) {
+		stylesheet = $.stylesheet.nextAvailable(true);
+	}
+
+	// If no stylesheet available at this point, stop.
+	if (!stylesheet) return;
+
+	return new cssRule(selector, rules, stylesheet);
+};
+
+})();
