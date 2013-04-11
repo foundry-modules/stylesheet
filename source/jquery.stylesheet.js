@@ -12,6 +12,13 @@
  *
  */
 
+var head = document.getElementsByTagName('head')[0],
+	stylesheets = document.styleSheets,
+	IE_STYLESHEET = document.createStyleSheet,
+	IE_MAX_STYLESHEET = 31,
+	IE_MAX_IMPORT = 31,
+	IE_MAX_RULE = 4095;
+
 $.stylesheet = (function() {
 
 	var self = function(url, attr) {
@@ -32,18 +39,15 @@ $.stylesheet = (function() {
 				}
 		);
 
+		// Create a new stylesheet object
 		if (options.url===undefined) {
-			return false;
+
+			return self.create(options);
 		}
 
-		return self.inject(options);
+		// Loading an external stylesheet
+		return self.load(options);
 	};
-
-	var IE_MAX_STYLE = 31,
-		IE_MAX_IMPORT = 31,
-
-		// @TODO: Plain text stylesheet insertion.
-		IE_MAX_RULE = 4095;
 
 	$.extend(self, {
 
@@ -55,17 +59,13 @@ $.stylesheet = (function() {
 
 			media: "all",
 
+			title: "",
+
 			// Force link injection, ignores IE workarounds, overrides XHR value.
 			forceInject: false,
 
 			// @TODO: XHR loading.
-			xhr: false,
-
-			// @TODO: bleedImports.
-			bleedImports: false,
-
-			// @TODO: bleedRules.
-			bleedRules: false
+			xhr: false
 		},
 
 		setup: function(options) {
@@ -80,7 +80,7 @@ $.stylesheet = (function() {
 				links = $('link[rel*="stylesheet"]')
 				styles = $('style');
 
-			stat.groups = IE_MAX_STYLE - links.length - styles.length;
+			stat.groups = IE_MAX_STYLESHEET - links.length - styles.length;
 
 			stat.slots = stat.groups * IE_MAX_IMPORT;
 
@@ -91,12 +91,29 @@ $.stylesheet = (function() {
 			return stat;
 		},
 
-		// "insert" method reserved for plain text stylesheet insertion.
-		insert: function() {
-			return;
+		create: function(options) {
+
+			var stylesheet,
+				length = stylesheets.length;
+
+			if (IE_STYLESHEET) {
+				// Unable to create further stylesheets
+				if (length>=IE_MAX_STYLESHEET) return;
+				stylesheet = document.createStyleSheet();
+			} else {
+				head.appendChild(document.createElement('style'));
+				stylesheet = stylesheets[stylesheets.length - 1];
+			}
+
+			// Fill in attributes
+			stylesheet.title = options.title;
+			stylesheet.media = options.media;
+			(stylesheet.ownerNode || stylesheet.owningElement).type = options.type;
+
+			return stylesheet;
 		},
 
-		inject: function(options) {
+		load: function(options) {
 
 			if ($.browser.msie && !options.forceInject) {
 
@@ -105,16 +122,17 @@ $.stylesheet = (function() {
 			} else {
 
 				// @TODO: Use onload/onerror events on browsers that support them.
-				$('<link>')
-					.attr({
-						href: options.url,
-						type: options.type,
-						rel: options.rel,
-						media: options.media
-					})
-					.appendTo('head');
+				var link =
+					$('<link>')
+						.attr({
+							href: options.url,
+							type: options.type,
+							rel: options.rel,
+							media: options.media
+						})
+						.appendTo('head');
 
-				return true;
+				return link[0];
 			}
 		},
 
@@ -135,7 +153,6 @@ $.stylesheet = (function() {
 
 					group.media = "all";
 					group.title = "jquery_stylesheet";
-
 
 				} catch(e) {
 
@@ -160,7 +177,7 @@ $.stylesheet = (function() {
 				failed = true;
 
 				if (options.verbose) {
-					console.info('Slots exceeded. Creating a new stylesheet group.');
+					console.info('Import slots exceeded. Creating a new stylesheet group.');
 				}
 			}
 
