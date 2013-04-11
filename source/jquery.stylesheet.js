@@ -113,6 +113,36 @@ $.stylesheet = (function() {
 			return stylesheet;
 		},
 
+		nextAvailable: function(alsoCreateIfUnavailable) {
+
+			var stylesheet,
+				length = stylesheets.length;
+
+			if (length) {
+
+				var i;
+
+				for (i=length; i--; i<0) {
+
+					stylesheet = stylesheets[i];
+
+					// If this is IE and the maximum amount of rules have exceeded,
+					if (IE_STYLESHEET && ((stylesheet.cssRules || stylesheet.rules).length >= IE_MAX_RULE)) {
+
+						// then this stylesheet cannot be used.
+						stylesheet = undefined;
+
+						// try an older stylesheet.
+						continue;
+					}
+
+					break;
+				}
+			}
+
+			return stylesheet || ((alsoCreateIfUnavailable) ? self() : undefined);
+		},
+
 		load: function(options) {
 
 			if ($.browser.msie && !options.forceInject) {
