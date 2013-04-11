@@ -374,7 +374,12 @@ var self = $.cssRule = function(selector, rules, stylesheet) {
 
 	// Get next available stylesheet if not stylesheet is provided.
 	if (!stylesheet) {
-		stylesheet = $.stylesheet.nextAvailable(true);
+
+		if (self.stylesheet===undefined) {
+			self.stylesheet = $.stylesheet();
+		}
+
+		stylesheet = self.stylesheet || $.stylesheet.nextAvailable(true);
 	}
 
 	// If no stylesheet available at this point, stop.
