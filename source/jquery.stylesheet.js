@@ -271,6 +271,8 @@ $.extend(cssRule.prototype, {
 
 	legacy: $.IE===8,
 
+	important: false,
+
 	set: function(selectors, rules) {
 
 		// Normalize selectors into array
@@ -284,7 +286,7 @@ $.extend(cssRule.prototype, {
 			this.rules = {};
 		} else {
 			this.preRule = "";
-			this.rules = rules;
+			this.rules = rules || this.rules;
 		}
 
 		this.update();
@@ -297,9 +299,14 @@ $.extend(cssRule.prototype, {
 	},
 
 	ruleText: function() {
+		var important = this.important;
 		return this.preRule +
 		       ((this.legacy) ? "-rule-id:" + this.id + ";" : "") +
-			   $.map(this.rules, function(val, prop) { return prop + ":" + val; }).join(";");
+			   $.map(this.rules, function(val, prop) {
+			   		if ($.isNumeric(val) && !$.cssNumber[prop]) val += "px";
+			   		if (important) val += " !important";
+			   		return prop + ":" + val;
+			   }).join(";");
 	},
 
 	update: function() {
