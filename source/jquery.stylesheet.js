@@ -91,33 +91,44 @@ $.stylesheet = (function() {
 			return stat;
 		},
 
+		get: function(style) {
+
+			var i=0;
+
+			for (; i<stylesheets.length; i++) {
+
+				var stylesheet = stylesheets[i];
+
+				if ((stylesheet.ownerNode || stylesheet.owningElement)==style) {
+					return stylesheet;
+				}
+			}
+		},
+
 		create: function(options) {
 
 			var stylesheet,
+				style,
 				length = stylesheets.length;
 
 			if (IE_STYLESHEET) {
 				// Unable to create further stylesheets
 				if (length>=IE_MAX_STYLESHEET) return;
 				stylesheet = document.createStyleSheet();
-
-				// Fill in attributes
-				(stylesheet.ownerNode || stylesheet.owningElement).type = options.type;
-				stylesheet.title = options.title;
-				stylesheet.media = options.media;
-
+				style = stylesheet.ownerNode || stylesheet.owningElement;
 			} else {
-
-				var style = document.createElement('style');
-					style.type  = options.type;
-					style.title = options.title;
-					style.media = options.media;
-					head.appendChild(style);
-
-				stylesheet = stylesheets[stylesheets.length - 1];
+				style = document.createElement('style');
+				head.appendChild(style);
 			}
 
-			return stylesheet;
+			$.extend(style, {
+				type : options.type,
+				title: options.title,
+				media: options.media,
+				rel  : options.rel
+			});
+
+			return style;
 		},
 
 		nextAvailable: function(alsoCreateIfUnavailable) {
@@ -147,7 +158,7 @@ $.stylesheet = (function() {
 				}
 			}
 
-			return stylesheet || ((alsoCreateIfUnavailable) ? self() : undefined);
+			return stylesheet.ownerNode || stylesheet.owningElement || ((alsoCreateIfUnavailable) ? self() : undefined);
 		},
 
 		load: function(options) {
@@ -236,20 +247,21 @@ $.stylesheet = (function() {
 
 (function(){
 
-var cssRule = function(selector, rules, stylesheet) {
+var cssRule = function(selectors, rules, style) {
+
 	this.id = $.uid();
-	this.stylesheet = stylesheet;
+	this.style = style;
 
 	// If selector is given, automatically add rule.
 	// Else assume caller wants a blank rule object.
-	if (selector) {
-		this.set(selector, rules);
+	if (selectors) {
+		this.set(selectors, rules);
 	}
 }
 
 $.extend(cssRule.prototype, {
 
-	stylesheet: null,
+	style: null,
 
 	selectors: [],
 
@@ -268,23 +280,26 @@ $.extend(cssRule.prototype, {
 
 		// Normalize rules
 		if ($.isString(rules)) {
-			this.preRule = rules;
-			rules = {};
+			this.preRule = rules + "\n";
+			this.rules = {};
 		} else {
 			this.preRule = "";
+			this.rules = rules;
 		}
+
+		this.update();
 
 		return this;
 	},
 
 	cssText: function() {
-		return this.selectors.join(",") + "{" + this.ruleText + "}\n";
+		return this.selectors.join(",") + "{" + this.ruleText() + "}\n";
 	},
 
 	ruleText: function() {
-		return this.preRule + "\n" +
+		return this.preRule +
 		       ((this.legacy) ? "-rule-id:" + this.id + ";" : "") +
-			   $.map(this.props, function(val, prop) { return prop + ":" + val; }).join(";");
+			   $.map(this.rules, function(val, prop) { return prop + ":" + val; }).join(";");
 	},
 
 	update: function() {
@@ -297,7 +312,7 @@ $.extend(cssRule.prototype, {
 		// If new, insert textnode
 		if (this.textNode===undefined) {
 			this.textNode = document.createTextNode(cssText);
-			stylesheet.appendChild(this.textNode);
+			this.style.appendChild(this.textNode);
 
 		// Or update existing textnode.
 		} else {
@@ -309,10 +324,12 @@ $.extend(cssRule.prototype, {
 
 	updateLegacy: function() {
 
-		var stylesheet = this.stylesheet,
+		this.removeLegacy();
+
+		var stylesheet = $.stylesheet.get(this.style),
 			selectors = this.selectors,
-			ruleText = this.ruleText,
-			i;
+			ruleText = this.ruleText(),
+			i=0;
 
 		for (;i<selectors.length;i++) {
 			stylesheet.addRule(selectors[i], ruleText);
@@ -327,8 +344,7 @@ $.extend(cssRule.prototype, {
 
 		// Removing text node is so much quicker
 		// than searching for the rule
-		this.stylesheet.ownerNode
-			.removeChild(this.textNode);
+		this.style.removeChild(this.textNode);
 
 		delete this.textNode;
 
@@ -337,20 +353,16 @@ $.extend(cssRule.prototype, {
 
 	removeLegacy: function() {
 
-		var stylesheet = this.stylesheet,
-			rule = false,
+		var stylesheet = $.stylesheet.get(this.style),
+			rules = stylesheet.rules,
 			i = 0;
 
-		do {
-			rule = stylesheet.rules[i];
+		for (;i<rules.length;i++) {
 
-			if (rule.cssText.match(this.id)) {
+			if (rules[i].cssText.match(this.id)!==null) {
 				stylesheet.removeRule(i);
 			}
-
-			i++;
-
-		} while (rule);
+		}
 
 		return this;
 	},
@@ -358,34 +370,33 @@ $.extend(cssRule.prototype, {
 	css: function(prop, val) {
 
 		// Getter
-		if (val===undefined) {
+		if ($.isString(prop) && val===undefined) {
 			return this.rules[prop];
 		}
 
 		// Setter
-		this.rules[prop] = val;
+		if ($.isPlainObject(prop)) {
+			$.extend(this.rules, prop);
+		} else {
+			this.rules[prop] = val;
+		}
+
 		this.update();
 
 		return this;
 	}
 });
 
-var self = $.cssRule = function(selector, rules, stylesheet) {
+var self = $.cssRule = function(selector, rules, style) {
 
-	// Get next available stylesheet if not stylesheet is provided.
-	if (!stylesheet) {
-
-		if (self.stylesheet===undefined) {
-			self.stylesheet = $.stylesheet();
-		}
-
-		stylesheet = self.stylesheet || $.stylesheet.nextAvailable(true);
-	}
+	var style = style || self.style || $.stylesheet.nextAvailable(true);
 
 	// If no stylesheet available at this point, stop.
-	if (!stylesheet) return;
+	if (!style) return;
 
-	return new cssRule(selector, rules, stylesheet);
+	return new cssRule(selector, rules, style);
 };
+
+self.style = $.stylesheet();
 
 })();
