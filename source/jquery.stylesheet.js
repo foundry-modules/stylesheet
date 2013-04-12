@@ -249,8 +249,15 @@ $.stylesheet = (function() {
 
 var cssRule = function(selectors, rules, style) {
 
-	this.id = $.uid();
-	this.style = style;
+	$.extend(this, {
+		id       : $.uid(),
+		style    : style,
+		selectors: [],
+		preRule  : "",
+		rules    : {},
+		legacy   : $.IE===8,
+		important: false
+	});
 
 	// If selector is given, automatically add rule.
 	// Else assume caller wants a blank rule object.
@@ -260,18 +267,6 @@ var cssRule = function(selectors, rules, style) {
 }
 
 $.extend(cssRule.prototype, {
-
-	style: null,
-
-	selectors: [],
-
-	preRule: "",
-
-	rules: {},
-
-	legacy: $.IE===8,
-
-	important: false,
 
 	set: function(selectors, rules) {
 
@@ -301,6 +296,7 @@ $.extend(cssRule.prototype, {
 	},
 
 	ruleText: function() {
+
 		var important = this.important;
 		return this.preRule +
 		       ((this.legacy) ? "-rule-id:" + this.id + ";" : "") +
