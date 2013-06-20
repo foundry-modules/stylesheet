@@ -128,6 +128,16 @@ $.stylesheet = (function() {
 				rel  : options.rel
 			});
 
+			// Insert stylesheet content
+			var content = options.content;
+			if (content!==undefined) {
+				if (IE_STYLESHEET) {
+					stylesheet.cssText = content;
+				} else {
+					style.appendChild(document.createTextNode(content));
+				}
+			}
+
 			return style;
 		},
 
