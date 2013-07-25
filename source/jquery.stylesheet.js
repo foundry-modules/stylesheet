@@ -418,3 +418,9 @@ var self = $.cssRule = function(selector, rules, style) {
 self.style = $.stylesheet();
 
 })();
+
+(function(){
+$.cssUrl = function(url) {
+	return "url(" + url + ")";
+}
+})();
