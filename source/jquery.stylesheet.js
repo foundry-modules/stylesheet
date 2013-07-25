@@ -357,11 +357,14 @@ $.extend(cssRule.prototype, {
 
 		if (this.legacy) return this.removeLegacy();
 
-		// Removing text node is so much quicker
-		// than searching for the rule
-		this.style.removeChild(this.textNode);
+		if (this.textNode!==undefined) {
 
-		delete this.textNode;
+			// Removing text node is so much quicker
+			// than searching for the rule
+			this.style.removeChild(this.textNode);
+
+			delete this.textNode;
+		}
 
 		return this;
 	},
