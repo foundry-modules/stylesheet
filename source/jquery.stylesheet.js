@@ -421,6 +421,6 @@ self.style = $.stylesheet();
 
 (function(){
 $.cssUrl = function(url) {
-	return "url(" + url + ")";
+	return 'url("' + encodeURI(url) + '")';
 }
 })();
